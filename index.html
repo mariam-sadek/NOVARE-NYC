@@ -92,7 +92,21 @@
     border:2px solid var(--c-bg);
     transition:transform .2s var(--ease);
   }
-  .burger{ display:none; width:40px; height:40px; align-items:center; justify-content:center; }
+  .burger{ display:none; width:40px; height:40px; align-items:center; justify-content:center; position:relative; z-index:20; }
+  .burger .icon-close{ display:none; }
+  .burger.open .icon-menu{ display:none; }
+  .burger.open .icon-close{ display:block; }
+
+  .mobile-nav{
+    display:none; position:fixed; top:0; right:0; height:100vh; width:min(300px, 78vw);
+    background:var(--c-surface); z-index:600; box-shadow:var(--shadow-lift);
+    transform:translateX(100%); transition:transform .4s var(--ease);
+    flex-direction:column; padding:96px 32px 32px;
+  }
+  .mobile-nav.active{ transform:translateX(0); }
+  .mobile-nav a{
+    font-size:17px; font-weight:700; padding:16px 0; border-bottom:1px solid var(--c-line);
+  }
 
   /* ============ HERO ============ */
   .hero{
@@ -426,16 +440,37 @@
     .container{ padding:0 20px; }
     .nav-links{ display:none; }
     .burger{ display:flex; }
+    .mobile-nav{ display:flex; }
+    .logo{ font-size:20px; }
+    .hero{ min-height:86vh; }
     .product-grid{ grid-template-columns:1fr 1fr; gap:14px; }
-    .section{ padding:64px 0; }
-    .footer-grid{ grid-template-columns:1fr; }
-    .chat-window{ width:88vw; right:6vw; }
+    .section{ padding:56px 0; }
+    .section-head{ margin-bottom:40px; }
+    .footer-grid{ grid-template-columns:1fr; gap:32px; }
+    .chat-window{ width:90vw; right:5vw; bottom:92px; height:65vh; }
+    .chat-fab{ width:54px; height:54px; bottom:18px; right:18px; }
+    .mini-cart{ bottom:18px; left:18px; padding:8px 16px 8px 8px; }
+    .mini-cart-text{ font-size:12.5px; }
     .hero p{ font-size:15px; }
+    .btn{ padding:14px 26px; font-size:12.5px; }
     .form-row{ flex-direction:column; }
+    .cart-drawer{ width:100vw; }
+    .product-modal{ border-radius:0; max-height:100vh; top:0; left:0; transform:none; width:100vw; }
+    .product-modal.active{ transform:none; }
+    .modal-body{ padding:26px 22px; }
+    .cat-sidebar{ padding:20px 18px; }
   }
   @media (max-width: 420px){
     .product-grid{ grid-template-columns:1fr 1fr; }
     .product-info h4{ font-size:13.5px; }
+    .product-info{ padding:14px 14px 16px; }
+    .hero-content{ padding:0 4px; }
+    .size-opt{ width:40px; height:40px; font-size:12px; }
+  }
+  @media (max-width: 360px){
+    .product-grid{ grid-template-columns:1fr; }
+    .container{ padding:0 16px; }
+    .footer-bottom{ flex-direction:column; gap:8px; text-align:center; }
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -463,12 +498,20 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         <span class="cart-badge" id="cartBadge">0</span>
       </button>
-      <button class="burger" aria-label="Menu">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <button class="burger" id="burgerBtn" aria-label="Menu" aria-expanded="false">
+        <svg class="icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
   </div>
 </header>
+
+<nav class="mobile-nav" id="mobileNav" aria-label="Mobile navigation">
+  <a href="#tshirts">Tops</a>
+  <a href="#hoodies">Hoodies</a>
+  <a href="#denim">Denim</a>
+  <a href="#outerwear">Outerwear</a>
+</nav>
 
 <!-- ============ HERO ============ -->
 <section class="hero" id="hero">
@@ -634,7 +677,10 @@
 
     <form class="checkout-form" id="checkoutForm">
       <input type="text" id="fullName" placeholder="Full Name" required>
-      <input type="email" id="email" placeholder="Email Address" required>
+      <div class="form-row">
+        <input type="email" id="email" placeholder="Email Address" required>
+        <input type="tel" id="phone" placeholder="Mobile Number" required>
+      </div>
       <input type="text" id="address" placeholder="Shipping Address" required>
       <div class="form-row">
         <input type="text" id="city" placeholder="City" required>
@@ -766,6 +812,25 @@
   const header = document.getElementById('siteHeader');
   window.addEventListener('scroll', ()=>{
     header.classList.toggle('scrolled', window.scrollY > 12);
+  });
+
+  /* ============ MOBILE NAV ============ */
+  const burgerBtn = document.getElementById('burgerBtn');
+  const mobileNav = document.getElementById('mobileNav');
+  function closeMobileNav(){
+    burgerBtn.classList.remove('open');
+    burgerBtn.setAttribute('aria-expanded','false');
+    mobileNav.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  burgerBtn.addEventListener('click', ()=>{
+    const isOpen = mobileNav.classList.toggle('active');
+    burgerBtn.classList.toggle('open', isOpen);
+    burgerBtn.setAttribute('aria-expanded', String(isOpen));
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  });
+  mobileNav.querySelectorAll('a').forEach(link=>{
+    link.addEventListener('click', closeMobileNav);
   });
 
   /* ============ SIDEBAR ACTIVE LINK ============ */
@@ -950,6 +1015,13 @@
     checkoutOpenBtn.style.display = 'none';
   });
 
+  // NOTE: Replace ORDER_ENDPOINT with your real order-processing URL (e.g. an n8n
+  // webhook, a serverless function, or your backend's /api/orders route).
+  // Until it's set to a real endpoint, orders are accepted locally so checkout
+  // can still be tested end-to-end.
+  const ORDER_ENDPOINT = 'https://your-order-endpoint.example.com/api/orders';
+  const isPlaceholderEndpoint = ORDER_ENDPOINT.includes('your-order-endpoint.example.com');
+
   checkoutForm.addEventListener('submit', async (e)=>{
     e.preventDefault();
     const submitBtn = document.getElementById('submitOrderBtn');
@@ -960,6 +1032,7 @@
       customer: {
         fullName: document.getElementById('fullName').value,
         email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
         address: document.getElementById('address').value,
         city: document.getElementById('city').value,
         postalCode: document.getElementById('postal').value
@@ -974,13 +1047,19 @@
     submitBtn.disabled = true;
 
     try{
-      const res = await fetch('https://your-order-endpoint.example.com/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
-      });
-
-      if(!res.ok) throw new Error('Order failed');
+      if(isPlaceholderEndpoint){
+        // No real backend configured yet — simulate the network round-trip
+        // so the flow can be demoed/tested without a live endpoint.
+        console.warn('ORDER_ENDPOINT is still a placeholder. Order was not actually sent anywhere:', orderData);
+        await new Promise(resolve => setTimeout(resolve, 700));
+      } else {
+        const res = await fetch(ORDER_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        });
+        if(!res.ok) throw new Error('Order failed with status ' + res.status);
+      }
 
       cart = [];
       saveCartUI();
